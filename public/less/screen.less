@@ -1,0 +1,88 @@
+@import "bootstrap.less";
+
+.container {
+  max-width: 390px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 120px;
+
+  .logo {
+    height: 25px;
+    width: 25px;
+    margin: 30px auto 20px auto;
+  }
+
+  h1 {
+    .char4 {
+      margin-left: -1px;
+    }
+    .char5 {
+      margin-left: -4px;
+    }
+    .char7 {
+      margin-left: -3px;
+    }
+
+    @media (max-width: 479px) {
+      .char4 {
+        margin-left: 0px;
+      }
+      .char5 {
+        margin-left: -3px;
+      }
+      .char7 {
+        margin-left: -1px;
+      }
+    }
+  }
+
+  ul {
+    margin-top: 30px;
+    border-top: 1px solid @orange;
+    border-bottom: 1px solid @orange;
+    padding: 3px 0;
+    font-family: "league-gothic"
+  }
+
+  li {
+    a {
+      display: inline-block;
+      width: 127.9px; //iOS...
+      padding-top: 2px;
+      background-color: @orange;
+      font-size: @baseFontSize * 1.1;
+      color: @orangeDarker;
+      text-transform: uppercase;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
+}
+
+article {
+  margin-top: 100px;
+
+  p {
+    text-indent: 2em;
+  }
+
+  .meta {
+    border-top: 1px solid @orange;
+    font-size: @baseFontSize * .8;
+    color: @orange;
+  }
+}
+
+footer {
+  margin: 120px 0 50px 0;
+
+  p {
+    margin-top: 10px;
+  }
+}
+
+@import "responsive.less";

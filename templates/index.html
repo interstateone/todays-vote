@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Today&rsquo;s Vote</title>
+    <meta name="description" content="Stay up to date with what Canada’s House of Commons is voting on each day.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/screen.css">
+    <script type="text/javascript" src="js/modernizr.js"></script>
+    <script type="text/javascript" src="//use.typekit.net/zbk3mfj.js"></script>
+    <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+    <script>
+      // http://www.toddmotto.com/mastering-svg-use-for-a-retina-web-fallbacks-with-png-script
+      if (!Modernizr.svg) {
+        var imgs = document.getElementsByTagName('img');
+        var endsWithDotSvg = /.*\.svg$/
+        var i = 0;
+        var l = imgs.length;
+        for(; i != l; ++i) {
+          if(imgs[i].src.match(endsWithDotSvg)) {
+            imgs[i].src = imgs[i].src.slice(0, -3) + "png";
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <img class="logo" src="img/maple_leaf.svg" alt="Maple Leaf">
+        <h1>Tod<span class="char4">a</span><span class="char5">y</span>&rsquo;<span class="char7">s</span> Vote</h1>
+        <p class="lead">Stay up to date with what Canada&rsquo;s House of Commons is voting on each day.</p>
+        <ul class="inline">
+          <li>
+            <a href="feed.json">JSON</a>
+          </li>
+          <li>
+            <a href="http://twitter.com/todaysvote">Twitter</a>
+          </li>
+          <li>
+            <a href="feed.xml">RSS</a>
+          </li>
+        </ul>
+      </header>
+      <section>
+        {{range .}}
+          <article>
+            <p>{{.Description}}. <a href="http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill={{.RelatedBill}}">Read more&hellip;</a></p>
+            <div class="meta">
+              <span class="pull-left"><sup>no</sup> {{.Number}}</span>
+              <span class="pull-right">{{FormatDate .Date}}</span></span>
+            </div>
+          </article>
+        {{end}}
+      </section>
+      <footer>
+        <h2>About Today&rsquo;s Vote</h2>
+        <p>Today&rsquo;s Vote is made by <a href="http://brandonevans.ca">Brandon Evans</a>.</p>
+        <p>He designed and implemented it, but all of the data comes from the Canadian Parliament.</p>
+      </footer>
+    </div>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-37799875-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+  </body>
+</html>
