@@ -180,8 +180,8 @@ func main() {
 			if err != nil {
 				log.Printf("%s", err)
 			}
+			count++
 		}
-		count++
 	}
 	transaction.Commit()
 	log.Printf("[digester]: inserted %d rows", count)
