@@ -64,7 +64,7 @@ func setup() {
 			parsedDate, _ := time.Parse("2006-01-02", date)
 			return parsedDate.Format("Monday, January 2, 2006")
 		},
-	}).ParseGlob("templates/*.html"))
+	}).ParseGlob("templates/*.tmpl"))
 
 	err := readEnvfile()
 	if err != nil {
@@ -226,13 +226,13 @@ func main() {
 	ioutil.WriteFile(filename, rssBody, 0666)
 
 	// Render index.html
-	filename = "index.html"
-	file, err = os.Create("public/" + filename)
+	filename = "index"
+	file, err = os.Create("public/" + filename + ".html")
 	if err != nil {
 		log.Printf("%v", err)
 	}
 	defer file.Close()
-	err = templates.ExecuteTemplate(file, filename, votes.Votes[0:10])
+	err = templates.ExecuteTemplate(file, filename+".tmpl", votes.Votes[0:10])
 	if err != nil {
 		log.Printf("%v", err)
 	}
