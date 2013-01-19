@@ -219,7 +219,9 @@ func main() {
 		} else {
 			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + v.RelatedBill
 		}
-		c.AddItem(&moverss.Item{Title: title, Link: link, Description: v.Description})
+		parsedDate, _ := time.Parse("2006-01-02", v.Date)
+		date := parsedDate.Format(time.RFC822)
+		c.AddItem(&moverss.Item{Title: title, Link: link, Description: v.Description, PubDate: date})
 	}
 	rssBody := c.PublishIndent()
 	filename = "public/feed.xml"
