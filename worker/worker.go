@@ -22,9 +22,11 @@ import (
 )
 
 var (
-	templates *template.Template
-	config    Config
-	goEnv     string
+	config      Config
+	goEnv       string
+	templates   *template.Template
+	templateDir string = "templates/"
+	outputDir   string = "public/"
 )
 
 type Config struct {
@@ -64,7 +66,7 @@ func setup() {
 			parsedDate, _ := time.Parse("2006-01-02", date)
 			return parsedDate.Format("Monday, January 2, 2006")
 		},
-	}).ParseGlob("templates/*.tmpl"))
+	}).ParseGlob(templateDir + "*.tmpl"))
 
 	err := readEnvfile()
 	if err != nil {
@@ -190,7 +192,7 @@ func main() {
 	j := JSONFeed{Title: "Today's Vote", Link: "http://www.todaysvote.ca", Description: "Stay up to date with what Canada's House of Commons is voting on each day."}
 	j.Items = votes.Votes[0:10]
 
-	filename := "public/feed.json"
+	filename := outputDir + "feed.json"
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Printf("%v", err)
@@ -224,12 +226,12 @@ func main() {
 		c.AddItem(&moverss.Item{Title: title, Link: link, Description: v.Description, PubDate: date})
 	}
 	rssBody := c.PublishIndent()
-	filename = "public/feed.xml"
+	filename = outputDir + "feed.xml"
 	ioutil.WriteFile(filename, rssBody, 0666)
 
 	// Render index.html
 	filename = "index"
-	file, err = os.Create("public/" + filename + ".html")
+	file, err = os.Create(outputDir + filename + ".html")
 	if err != nil {
 		log.Printf("%v", err)
 	}
