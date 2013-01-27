@@ -2,11 +2,19 @@
 
 .container {
   max-width: 390px;
+
+  @media (max-width: 479px) {
+    width: 280px;
+  }
 }
 
 header {
   text-align: center;
   margin-bottom: 120px;
+
+  @media (max-width: 479px) {
+    margin-bottom: 40px;
+  }
 
   .logo {
     height: 25px;
@@ -26,6 +34,9 @@ header {
     }
 
     @media (max-width: 479px) {
+      font-size: @baseFontSize * 3.75;
+      line-height: @baseLineHeight * 1.25;
+
       .char4 {
         margin-left: 0px;
       }
@@ -55,9 +66,16 @@ header {
       font-size: @baseFontSize * 1.1;
       color: @orangeDarker;
       text-transform: uppercase;
+      text-decoration: none;
+
+      @media (max-width: 479px) {
+        width: 91px;
+      }
 
       &:hover {
         text-decoration: none;
+        color: @orange;
+        background-color: @orangeDarker;
       }
     }
   }
@@ -66,12 +84,24 @@ header {
 article {
   margin-top: 100px;
 
+  @media (max-width: 479px) {
+    margin-top: 80px;
+  }
+
   p {
-    text-indent: 2em;
+    .first-letter {
+      color: @orangeDarker;
+      font-size: @baseFontSize * 2.5;
+      font-weight: bold;
+      padding: .3em .25em .2em .25em;
+      float: left;
+      margin-right: .25em;
+      border-bottom: none;
+    }
   }
 
   .meta {
-    border-top: 1px solid @orange;
+    border-top: 1px solid @orangeDarker;
     font-size: @baseFontSize * .8;
     color: @orange;
   }

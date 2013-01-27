@@ -46,18 +46,22 @@
       <section>
         {{range .}}
           <article>
-            <p>{{.Description}}. <a href="http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill={{.RelatedBill}}">Read more&hellip;</a></p>
+            <p><span class="first-letter">{{.Decision | Booleanize | FirstLetter}}</span>{{.DescriptionEnglish}}.</p>
+            {{if .RelatedBill}}<p>Read more about <a href="http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill={{.RelatedBill}}">Bill {{.RelatedBill}}</a> on LEGISinfo.</p>{{end}}
             <div class="meta">
               <span class="pull-left"><sup>no</sup> {{.Number}}</span>
               <span class="pull-right">{{FormatDate .Date}}</span></span>
             </div>
           </article>
         {{end}}
+        <article>
+          <p>Today's Vote always shows the latest 10 votes, but you can browse the House of Commons <a href="http://www.parl.gc.ca/HouseChamberBusiness/Chambervotelist.aspx">Vote Listing</a> for more.</p>
+        </article>
       </section>
       <footer>
         <h2>About Today&rsquo;s Vote</h2>
-        <p>Today&rsquo;s Vote is made by <a href="http://brandonevans.ca">Brandon Evans</a>.</p>
-        <p>He designed and implemented it, but all of the data comes from the Canadian Parliament.</p>
+        <p>Today&rsquo;s Vote is made by <a href="http://brandonevans.ca">Brandon Evans</a>, but all of the data comes from the Canadian Parliament.</p>
+        <p>If you want to make government more open and accessible, reach out to him on <a href="http://www.twitter.com/interstateone">Twitter</a>.</p>
       </footer>
     </div>
     <script type="text/javascript">
