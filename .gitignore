@@ -1,5 +1,5 @@
-web
-digester
+bin/
+pkg/
 .env
 feed.*
 index.html
