@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"github.com/daaku/go.httpgzip"
+	"github.com/darkhelmet/env"
 	"net/http"
 )
 
 func main() {
-	panic(http.ListenAndServe(":8080", httpgzip.NewHandler(http.FileServer(http.Dir("public")))))
+	port := env.IntDefault("PORT", 8080)
+	panic(http.ListenAndServe(fmt.Sprintf(":%d", port), httpgzip.NewHandler(http.FileServer(http.Dir("public")))))
 }
