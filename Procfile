@@ -1,2 +1,2 @@
-web: ./web
-worker: ./digester
+web: ./bin/web
+worker: ./bin/digester
