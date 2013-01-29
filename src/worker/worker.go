@@ -29,11 +29,8 @@ var (
 	templates   *template.Template
 	templateDir string = "templates/"
 	outputDir   string = "public/"
+	digestUrl   string = "http://www.parl.gc.ca/HouseChamberBusiness/Chambervotelist.aspx?Language=E&xml=True"
 )
-
-type Config struct {
-	DigestUrl string
-}
 
 type Votes struct {
 	XMLName xml.Name `xml:"Votes" db:"-" json:"-"`
@@ -87,12 +84,6 @@ func setup() {
 	}
 
 	goEnv = env.String("GO_ENV")
-
-	config = Config{}
-	err = loadConfig(&config)
-	if err != nil {
-		log.Printf("v", err)
-	}
 }
 
 func readEnvfile() error {
@@ -109,19 +100,6 @@ func readEnvfile() error {
 			k, v := strings.TrimSpace(tokens[0]), strings.TrimSpace(tokens[1])
 			os.Setenv(k, v)
 		}
-	}
-	return nil
-}
-
-func loadConfig(config *Config) error {
-	filename := "worker/config.json"
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(body, &config)
-	if err != nil {
-		return err
 	}
 	return nil
 }
@@ -196,7 +174,7 @@ func main() {
 		maxParliament = rows[0].(*Vote).Parliament
 	}
 
-	votes := downloadVotes(config.DigestUrl)
+	votes := downloadVotes(digestUrl)
 	newVotes := []Vote{}
 	for _, v := range votes.Votes {
 		if (v.Parliament == maxParliament && v.Number > maxVoteNumber) || v.Parliament > maxParliament {
@@ -257,7 +235,7 @@ func main() {
 		newVotes[index].DescriptionFrench = french
 	}
 
-	// Insert and push to Buffer oldest votes first
+	// Insert oldest votes first
 	for i, j := 0, len(newVotes)-1; i < j; i, j = i+1, j-1 {
 		newVotes[i], newVotes[j] = newVotes[j], newVotes[i]
 	}
@@ -279,7 +257,7 @@ func main() {
 	authToken := env.String("BUFFER_AUTH_TOKEN")
 	clientId := env.String("BUFFER_CLIENT_ID")
 	clientSecret := env.String("BUFFER_CLIENT_SECRET")
-	config := &oauth.Config{
+	bufferConfig := &oauth.Config{
 		ClientId:     clientId,
 		ClientSecret: clientSecret,
 		Scope:        "",
@@ -287,7 +265,7 @@ func main() {
 		TokenURL:     "",
 		TokenCache:   oauth.CacheFile(""),
 	}
-	transport := &oauth.Transport{Config: config}
+	transport := &oauth.Transport{Config: bufferConfig}
 	buffer := bufferapi.ClientFactory(authToken, transport)
 	profiles, err := buffer.Profiles()
 	if err != nil {
@@ -302,7 +280,7 @@ func main() {
 		} else {
 			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + vote.RelatedBill
 		}
-		u := bufferapi.NewUpdate{Text: vote.DescriptionEnglish, Media: map[string]string{"Link": link}, ProfileIds: []string{(*profiles)[0].Id}, Shorten: true, Now: false}
+		u := bufferapi.NewUpdate{Text: vote.DescriptionEnglish, Media: map[string]string{"link": link}, ProfileIds: []string{(*profiles)[0].Id}, Shorten: true, Now: false}
 		_, err := buffer.Update(&u)
 		if err != nil {
 			log.Printf("%v", err)
