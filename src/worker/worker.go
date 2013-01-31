@@ -72,9 +72,12 @@ func setup() {
 		},
 		"Booleanize": func(decision string) string {
 			if decision == "Agreed to" {
-				return "Yes"
+				return "<span class=\"y\">Y</span>e<span class=\"a-salt\">a</span>"
 			}
-			return "No"
+			return "<span class=\"n\">N</span>ay"
+		},
+		"HTML": func(html string) template.HTML {
+			return template.HTML(html)
 		},
 	}).ParseGlob(templateDir + "*.tmpl"))
 

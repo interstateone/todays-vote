@@ -987,6 +987,29 @@ header li a:hover {
   color: #ff9d10;
   background-color: #bc620b;
 }
+.decision {
+  color: #bc620b;
+  padding: .3em .25em .2em .25em;
+  float: left;
+  margin-right: .25em;
+  border-bottom: none;
+}
+.decision:first-letter {
+  font-size: 50px;
+  font-weight: bold;
+}
+.decision .y {
+  margin-right: -0.05em;
+}
+.decision .n {
+  margin-right: -0.04em;
+}
+.decision .a-salt {
+  -webkit-font-feature-settings: "salt" 1;
+  -moz-font-feature-settings: "salt" 1;
+  -ms-font-feature-settings: "salt" 1;
+  font-feature-settings: "salt" 1;
+}
 article {
   margin-top: 100px;
 }
@@ -995,19 +1018,11 @@ article {
     margin-top: 80px;
   }
 }
-article p .first-letter {
-  color: #bc620b;
-  font-size: 50px;
-  font-weight: bold;
-  padding: .3em .25em .2em .25em;
-  float: left;
-  margin-right: .25em;
-  border-bottom: none;
-}
 article .meta {
   border-top: 1px solid #bc620b;
   font-size: 16px;
   color: #ff9d10;
+  clear: both;
 }
 footer {
   margin: 120px 0 50px 0;

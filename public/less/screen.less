@@ -81,6 +81,32 @@ header {
   }
 }
 
+.decision {
+  color: @orangeDarker;
+  padding: .3em .25em .2em .25em;
+  float: left;
+  margin-right: .25em;
+  border-bottom: none;
+
+  &:first-letter {
+    font-size: @baseFontSize * 2.5;
+    font-weight: bold;
+  }
+
+  .y {
+    margin-right: -0.05em;
+  }
+  .n {
+    margin-right: -.04em;
+  }
+  .a-salt {
+    -webkit-font-feature-settings: "salt" 1;
+    -moz-font-feature-settings: "salt" 1;
+    -ms-font-feature-settings: "salt" 1;
+    font-feature-settings: "salt" 1;
+  }
+}
+
 article {
   margin-top: 100px;
 
@@ -88,22 +114,11 @@ article {
     margin-top: 80px;
   }
 
-  p {
-    .first-letter {
-      color: @orangeDarker;
-      font-size: @baseFontSize * 2.5;
-      font-weight: bold;
-      padding: .3em .25em .2em .25em;
-      float: left;
-      margin-right: .25em;
-      border-bottom: none;
-    }
-  }
-
   .meta {
     border-top: 1px solid @orangeDarker;
     font-size: @baseFontSize * .8;
     color: @orange;
+    clear: both;
   }
 }
 
