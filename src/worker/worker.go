@@ -47,18 +47,18 @@ type JSONFeed struct {
 type Vote struct {
 	XMLName            xml.Name `xml:"Vote" db:"-" json:"-"`
 	Id                 int64    `xml:"-" db:"id" json:"-"`
-	Number             int64    `xml:"number,attr"`
-	Parliament         int64    `xml:"parliament,attr"`
-	Session            int64    `xml:"session,attr"`
-	Sitting            int64    `xml:"sitting,attr"`
-	Date               string   `xml:"date,attr"`
-	DescriptionEnglish string   `xml:"Description"`
-	DescriptionFrench  string   `xml:"-"`
-	Decision           string   `xml:"Decision"`
-	RelatedBill        string   `xml:"RelatedBill"`
-	TotalYeas          int64    `xml:"TotalYeas"`
-	TotalNays          int64    `xml:"TotalNays"`
-	TotalPaired        int64    `xml:"TotalPaired"`
+	Number             int64    `xml:"number,attr" db:"number"`
+	Parliament         int64    `xml:"parliament,attr" db:"parliament"`
+	Session            int64    `xml:"session,attr" db:"session"`
+	Sitting            int64    `xml:"sitting,attr" db:"sitting"`
+	Date               string   `xml:"date,attr" db:"date"`
+	DescriptionEnglish string   `xml:"Description" db:"description_english"`
+	DescriptionFrench  string   `xml:"-" db:"description_french"`
+	Decision           string   `xml:"Decision" db:"decision"`
+	RelatedBill        string   `xml:"RelatedBill" db:"related_bill"`
+	TotalYeas          int64    `xml:"TotalYeas" db:"total_yeas"`
+	TotalNays          int64    `xml:"TotalNays" db:"total_nays"`
+	TotalPaired        int64    `xml:"TotalPaired" db:"total_paired"`
 }
 
 func setup() {
