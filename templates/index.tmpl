@@ -46,7 +46,7 @@
       <section>
         {{range .}}
           <article>
-            <p><span class="decision">{{.Decision | Booleanize | HTML}}</span>{{.DescriptionEnglish}}.</p>
+            <p><span class="decision">{{.Decision | Booleanize}}</span>{{.DescriptionEnglish}}.</p>
             {{if .RelatedBill}}<p>Read more about <a href="http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill={{.RelatedBill}}">Bill {{.RelatedBill}}</a> on LEGISinfo.</p>{{end}}
             <div class="meta">
               <span class="pull-left"><sup>no</sup> {{.Number}}</span>

@@ -83,27 +83,16 @@ header {
 
 .decision {
   color: @orangeDarker;
-  padding: .3em .25em .2em .25em;
+  padding: .5em .25em .2em .25em;
   float: left;
   margin-right: .25em;
   border-bottom: none;
+  font-size: @baseFontSize * 1.25;
+  -webkit-font-feature-settings: "smcp" 1;
 
   &:first-letter {
     font-size: @baseFontSize * 2.5;
-    font-weight: bold;
-  }
-
-  .y {
-    margin-right: -0.05em;
-  }
-  .n {
-    margin-right: -.04em;
-  }
-  .a-salt {
-    -webkit-font-feature-settings: "salt" 1;
-    -moz-font-feature-settings: "salt" 1;
-    -ms-font-feature-settings: "salt" 1;
-    font-feature-settings: "salt" 1;
+    margin-right: -.05em;
   }
 }
 

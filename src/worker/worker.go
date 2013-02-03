@@ -70,12 +70,7 @@ func setup() {
 		"FirstLetter": func(input string) string {
 			return strings.Split(input, "")[0]
 		},
-		"Booleanize": func(decision string) string {
-			if decision == "Agreed to" {
-				return "<span class=\"y\">Y</span>e<span class=\"a-salt\">a</span>"
-			}
-			return "<span class=\"n\">N</span>ay"
-		},
+		"Booleanize": Booleanize,
 		"HTML": func(html string) template.HTML {
 			return template.HTML(html)
 		},
@@ -87,6 +82,13 @@ func setup() {
 	}
 
 	goEnv = env.String("GO_ENV")
+}
+
+func Booleanize(decision string) string {
+	if decision == "Agreed to" {
+		return "Yea"
+	}
+	return "Nay"
 }
 
 func readEnvfile() error {
