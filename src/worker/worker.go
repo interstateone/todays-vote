@@ -16,6 +16,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -24,7 +25,6 @@ import (
 )
 
 var (
-	config      Config
 	goEnv       string
 	templates   *template.Template
 	templateDir string = "templates/"
@@ -219,6 +219,8 @@ func main() {
 			translatedWords[index] = "2e"
 		case "Privé":
 			translatedWords[index] = "Affaires"
+		case "Temps":
+			translatedWords[index] = "Attribution"
 		}
 	}
 	if len(newVotes) > 0 {
@@ -229,7 +231,7 @@ func main() {
 	for index, vote := range newVotes {
 		splitIndex := strings.Index(vote.DescriptionEnglish, translatedWords[index])
 		if splitIndex < 0 {
-			splitIndex = len(vote.DescriptionEnglish)
+			splitIndex = len(vote.DescriptionEnglish) - 1
 		}
 		log.Printf("whole: %v", vote.DescriptionEnglish)
 		english := strings.Join(strings.Split(vote.DescriptionEnglish, "")[0:splitIndex], "")
@@ -285,7 +287,15 @@ func main() {
 		} else {
 			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + vote.RelatedBill
 		}
-		u := bufferapi.NewUpdate{Text: vote.DescriptionEnglish, Media: map[string]string{"link": link}, ProfileIds: []string{(*profiles)[0].Id}, Shorten: true, Now: false}
+
+		description := vote.DescriptionEnglish
+		if len(vote.DescriptionEnglish) > 110 {
+			end := math.Min(110, (float64)(len(vote.DescriptionEnglish)-1))
+			description = vote.DescriptionEnglish[:(int64)(end)]
+			description += "..."
+		}
+
+		u := bufferapi.NewUpdate{Text: description + " " + link, Media: map[string]string{"link": link}, ProfileIds: []string{(*profiles)[0].Id}, Shorten: true, Now: false}
 		_, err := buffer.Update(&u)
 		if err != nil {
 			log.Printf("%v", err)
