@@ -3,62 +3,31 @@ package main
 import (
 	"bytes"
 	"code.google.com/p/goauth2/oauth"
-	"database/sql"
 	"encoding/json"
-	"encoding/xml"
-	"fmt"
 	"github.com/baliw/moverss"
-	_ "github.com/bmizerany/pq"
-	"github.com/coopernurse/gorp"
 	"github.com/darkhelmet/env"
 	"github.com/interstateone/bufferapi"
 	"github.com/interstateone/translate"
 	"html/template"
 	"io/ioutil"
 	"log"
-	"math"
-	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
+	"votes"
 )
 
 var (
-	goEnv       string
 	templates   *template.Template
 	templateDir string = "templates/"
 	outputDir   string = "public/"
-	digestUrl   string = "http://www.parl.gc.ca/HouseChamberBusiness/Chambervotelist.aspx?Language=E&xml=True"
 )
 
-type Votes struct {
-	XMLName xml.Name `xml:"Votes" db:"-" json:"-"`
-	Votes   []Vote   `xml:"Vote"`
-}
-
 type JSONFeed struct {
-	Title       string `json:"title"`
-	Link        string `json:"link"`
-	Description string `json:"description"`
-	Items       []Vote `json:"items"`
-}
-
-type Vote struct {
-	XMLName            xml.Name `xml:"Vote" db:"-" json:"-"`
-	Id                 int64    `xml:"-" db:"id" json:"-"`
-	Number             int64    `xml:"number,attr" db:"number"`
-	Parliament         int64    `xml:"parliament,attr" db:"parliament"`
-	Session            int64    `xml:"session,attr" db:"session"`
-	Sitting            int64    `xml:"sitting,attr" db:"sitting"`
-	Date               string   `xml:"date,attr" db:"date"`
-	DescriptionEnglish string   `xml:"Description" db:"description_english"`
-	DescriptionFrench  string   `xml:"-" db:"description_french"`
-	Decision           string   `xml:"Decision" db:"decision"`
-	RelatedBill        string   `xml:"RelatedBill" db:"related_bill"`
-	TotalYeas          int64    `xml:"TotalYeas" db:"total_yeas"`
-	TotalNays          int64    `xml:"TotalNays" db:"total_nays"`
-	TotalPaired        int64    `xml:"TotalPaired" db:"total_paired"`
+	Title       string       `json:"title"`
+	Link        string       `json:"link"`
+	Description string       `json:"description"`
+	Items       []votes.Vote `json:"items"`
 }
 
 func setup() {
@@ -80,8 +49,6 @@ func setup() {
 	if err != nil {
 		log.Printf("v", err)
 	}
-
-	goEnv = env.String("GO_ENV")
 }
 
 func Booleanize(decision string) string {
@@ -109,89 +76,87 @@ func readEnvfile() error {
 	return nil
 }
 
-func getRequest(client *http.Client, url string) (body []byte, err error) {
-	response, err := client.Get(url)
-	if err != nil {
-		return nil, err
+func initBuffer() (buffer *bufferapi.Client) {
+	authToken := env.String("BUFFER_AUTH_TOKEN")
+	clientId := env.String("BUFFER_CLIENT_ID")
+	clientSecret := env.String("BUFFER_CLIENT_SECRET")
+	bufferConfig := &oauth.Config{
+		ClientId:     clientId,
+		ClientSecret: clientSecret,
+		Scope:        "",
+		AuthURL:      "",
+		TokenURL:     "",
+		TokenCache:   oauth.CacheFile(""),
 	}
-	defer response.Body.Close()
-	bytes, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
-}
-
-func downloadVotes(uri string) (votes *Votes) {
-	client := http.Client{}
-	xmlBody, err := getRequest(&client, uri)
-	if err != nil {
-		log.Printf("%v", err)
-	}
-
-	// Switch the RelatedBill number attribute to it's value
-	pattern, err := regexp.Compile("<RelatedBill number=\"([a-zA-Z0-9-]+)\" />")
-	if err != nil {
-		log.Printf("%v", err)
-	}
-	xmlBody = pattern.ReplaceAll(xmlBody, []byte("<RelatedBill>$1</RelatedBill>"))
-
-	xml.Unmarshal(xmlBody, &votes)
+	transport := &oauth.Transport{Config: bufferConfig}
+	buffer = bufferapi.ClientFactory(authToken, transport)
 	return
 }
 
-func initDatabase() (dbmap *gorp.DbMap, err error) {
-	host := env.String(goEnv + "_POSTGRES_HOST")
-	database := env.String(goEnv + "_POSTGRES_DB")
-	user := env.String(goEnv + "_POSTGRES_USER")
-	port := env.String(goEnv + "_POSTGRES_PORT")
-	password := env.String(goEnv + "_POSTGRES_PASSWORD")
-	ssl := env.String(goEnv + "_POSTGRES_SSL")
-	connectionInfo := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s sslmode=%s", database, user, password, host, port, ssl)
-	db, err := sql.Open("postgres", connectionInfo)
-	if err != nil {
-		return nil, err
+func renderRSS(filename string, channel *moverss.Channel, data []votes.Vote) (err error) {
+	for _, v := range data {
+		var title string
+		if v.RelatedBill == "" {
+			title = "Vote"
+		} else {
+			title = v.RelatedBill
+		}
+		var link string
+		if v.RelatedBill == "" {
+			link = "http://www.todaysvote.ca"
+		} else {
+			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + v.RelatedBill
+		}
+		parsedDate, _ := time.Parse("2006-01-02", v.Date)
+		date := parsedDate.Format(time.RFC822)
+		channel.AddItem(&moverss.Item{Title: title, Link: link, Description: v.Decision + ": " + v.DescriptionEnglish, PubDate: date})
 	}
-	dbmap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-	return
+	rssBody := channel.PublishIndent()
+	filename = outputDir + filename + ".xml"
+	ioutil.WriteFile(filename, rssBody, 0666)
+	return nil
+}
+
+func renderJSON(filename string, feed JSONFeed) (err error) {
+	filename = outputDir + filename + ".json"
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	jsonBody, err := json.MarshalIndent(feed, "", "  ")
+	if err != nil {
+		return err
+	}
+	jsonArray := [][]byte{[]byte("jsonVoteFeed("), jsonBody, []byte(")")}
+	jsonBody = bytes.Join(jsonArray, []byte(""))
+	ioutil.WriteFile(filename, jsonBody, 0666)
+	return nil
+}
+
+func renderHTML(filename string, data interface{}) (err error) {
+	file, err := os.Create(outputDir + filename + ".html")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = templates.ExecuteTemplate(file, filename+".tmpl", data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
 	setup()
-	dbmap, err := initDatabase()
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-	table := dbmap.AddTable(Vote{}).SetKeys(true, "Id")
-	table.ColMap("DescriptionEnglish").SetMaxSize(2048)
-	table.ColMap("DescriptionFrench").SetMaxSize(2048)
-	dbmap.CreateTables()
 
-	query := "SELECT parliament, number FROM vote ORDER BY parliament DESC, number DESC LIMIT 1"
-	rows, err := dbmap.Select(Vote{}, query)
+	latestVotes, err := votes.FetchLatestVotes()
 	if err != nil {
-		log.Printf("%v", err)
-	}
-	var maxVoteNumber int64 = 0
-	var maxParliament int64 = 0
-	if len(rows) > 0 {
-		maxVoteNumber = rows[0].(*Vote).Number
-		maxParliament = rows[0].(*Vote).Parliament
-	}
-
-	votes := downloadVotes(digestUrl)
-	newVotes := []Vote{}
-	for _, v := range votes.Votes {
-		if (v.Parliament == maxParliament && v.Number > maxVoteNumber) || v.Parliament > maxParliament {
-			newVotes = append(newVotes, v)
-		}
-	}
-	if len(newVotes) > 10 {
-		newVotes = newVotes[0:10]
+		log.Printf("%+v", err)
 	}
 
 	wordsToTranslate := []string{}
-	for _, vote := range newVotes {
+	for _, vote := range latestVotes {
 		firstWord := strings.Split(vote.DescriptionEnglish, " ")[0]
 		wordsToTranslate = append(wordsToTranslate, firstWord)
 	}
@@ -223,13 +188,13 @@ func main() {
 			translatedWords[index] = "Attribution"
 		}
 	}
-	if len(newVotes) > 0 {
+	if len(latestVotes) > 0 {
 		log.Printf("%+v", wordsToTranslate)
 		log.Printf("%+v", translatedWords)
 	}
 
-	for index, vote := range newVotes {
-		splitIndex := strings.Index(vote.DescriptionEnglish, translatedWords[index])
+	for index, vote := range latestVotes {
+		splitIndex := strings.LastIndex(vote.DescriptionEnglish, translatedWords[index])
 		if splitIndex < 0 {
 			splitIndex = len(vote.DescriptionEnglish) - 1
 		}
@@ -238,64 +203,29 @@ func main() {
 		log.Printf("en: %v", english)
 		french := strings.Join(strings.Split(vote.DescriptionEnglish, "")[splitIndex:], "")
 		log.Printf("fr: %v", french)
-		newVotes[index].DescriptionEnglish = english
-		newVotes[index].DescriptionFrench = french
+		latestVotes[index].DescriptionEnglish = english
+		latestVotes[index].DescriptionFrench = french
 	}
 
 	// Insert oldest votes first
-	for i, j := 0, len(newVotes)-1; i < j; i, j = i+1, j-1 {
-		newVotes[i], newVotes[j] = newVotes[j], newVotes[i]
-	}
-
-	transaction, err := dbmap.Begin()
-	if err != nil {
-		log.Printf("%v", err)
-	}
-	for _, v := range newVotes {
-		err := transaction.Insert(&v)
-		if err != nil {
-			log.Printf("%s", err)
-		}
-	}
-	transaction.Commit()
-	log.Printf("[worker] Inserted %d rows", len(newVotes))
+	latestVotes.Reverse()
+	votes.InsertVotes(latestVotes)
+	log.Printf("[worker] Inserted %d rows", len(latestVotes))
 
 	// Push new votes to Buffer, oldest first
-	authToken := env.String("BUFFER_AUTH_TOKEN")
-	clientId := env.String("BUFFER_CLIENT_ID")
-	clientSecret := env.String("BUFFER_CLIENT_SECRET")
-	bufferConfig := &oauth.Config{
-		ClientId:     clientId,
-		ClientSecret: clientSecret,
-		Scope:        "",
-		AuthURL:      "",
-		TokenURL:     "",
-		TokenCache:   oauth.CacheFile(""),
-	}
-	transport := &oauth.Transport{Config: bufferConfig}
-	buffer := bufferapi.ClientFactory(authToken, transport)
+	buffer := initBuffer()
 	profiles, err := buffer.Profiles()
 	if err != nil {
 		log.Printf("%v", err)
 	}
 
 	bufferCount := 0
-	for _, vote := range newVotes {
-		var link string
-		if vote.RelatedBill == "" {
-			link = "http://www.todaysvote.ca"
-		} else {
-			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + vote.RelatedBill
-		}
-
-		description := vote.DescriptionEnglish
-		if len(vote.DescriptionEnglish) > 110 {
-			end := math.Min(110, (float64)(len(vote.DescriptionEnglish)-1))
-			description = vote.DescriptionEnglish[:(int64)(end)]
-			description += "..."
-		}
-
-		u := bufferapi.NewUpdate{Text: description + " " + link, Media: map[string]string{"link": link}, ProfileIds: []string{(*profiles)[0].Id}, Shorten: true, Now: false}
+	for _, vote := range latestVotes {
+		u := bufferapi.NewUpdate{Text: vote.ShortDescription() + " " + vote.Link(),
+			Media:      map[string]string{"link": vote.Link()},
+			ProfileIds: []string{(*profiles)[0].Id},
+			Shorten:    true,
+			Now:        false}
 		_, err := buffer.Update(&u)
 		if err != nil {
 			log.Printf("%v", err)
@@ -305,65 +235,29 @@ func main() {
 	}
 	log.Printf("[worker] Pushed %d tweets to Buffer", bufferCount)
 
-	query = "SELECT * FROM vote ORDER BY id DESC LIMIT 10"
-	rows, err = dbmap.Select(Vote{}, query)
+	latestTenVotes, err := votes.LatestTenVotes()
 	if err != nil {
-		log.Printf("%v", err)
-	}
-	latestTenVotes := []Vote{}
-	for _, row := range rows {
-		latestTenVotes = append(latestTenVotes, *(row.(*Vote)))
+		log.Printf("%+v", err)
 	}
 
 	// Render JSON file
 	j := JSONFeed{Title: "Today's Vote", Link: "http://www.todaysvote.ca", Description: "Stay up to date with what Canada's House of Commons is voting on each day.", Items: latestTenVotes}
-	filename := outputDir + "feed.json"
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
+	err = renderJSON("feed", j)
 	if err != nil {
 		log.Printf("%v", err)
 	}
-	defer file.Close()
-	jsonBody, err := json.MarshalIndent(j, "", "  ")
-	if err != nil {
-		log.Printf("%v", err)
-	}
-	jsonArray := [][]byte{[]byte("jsonVoteFeed("), jsonBody, []byte(")")}
-	jsonBody = bytes.Join(jsonArray, []byte(""))
-	ioutil.WriteFile(filename, jsonBody, 0666)
 	log.Println("[worker] Rendered JSON feed")
 
 	// Write feed to RSS file
 	c := moverss.ChannelFactory("Today's Vote", "http://www.todaysvote.ca", "Stay up to date with what Canada's House of Commons is voting on each day.")
-	for _, v := range latestTenVotes {
-		var title string
-		if v.RelatedBill == "" {
-			title = "Vote"
-		} else {
-			title = v.RelatedBill
-		}
-		var link string
-		if v.RelatedBill == "" {
-			link = "http://www.todaysvote.ca"
-		} else {
-			link = "http://www.parl.gc.ca/LegisInfo/BillDetails.aspx?Mode=1&Language=E&bill=" + v.RelatedBill
-		}
-		parsedDate, _ := time.Parse("2006-01-02", v.Date)
-		date := parsedDate.Format(time.RFC822)
-		c.AddItem(&moverss.Item{Title: title, Link: link, Description: v.Decision + ": " + v.DescriptionEnglish, PubDate: date})
-	}
-	rssBody := c.PublishIndent()
-	filename = outputDir + "feed.xml"
-	ioutil.WriteFile(filename, rssBody, 0666)
-	log.Println("[worker] Rendered RSS feed")
-
-	// Render index.html
-	filename = "index"
-	file, err = os.Create(outputDir + filename + ".html")
+	err = renderRSS("feed", c, latestTenVotes)
 	if err != nil {
 		log.Printf("%v", err)
 	}
-	defer file.Close()
-	err = templates.ExecuteTemplate(file, filename+".tmpl", latestTenVotes)
+	log.Println("[worker] Rendered RSS feed")
+
+	// Render index.html
+	err = renderHTML("index", latestTenVotes)
 	if err != nil {
 		log.Printf("%v", err)
 	}
