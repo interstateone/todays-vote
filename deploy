@@ -1,0 +1,7 @@
+#!/bin/bash
+
+GOOS=linux GOARCH=386 go build -o worker
+scp ./worker dh:todaysvote.ca/bin/worker
+scp -r ./public dh:todaysvote.ca/public
+scp -r ./templates dh:todaysvote.ca/templates
+rm ./worker
