@@ -13,14 +13,12 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
-	"sync"
 )
 
 var (
 	digestUrl string = "http://www.parl.gc.ca/HouseChamberBusiness/Chambervotelist.aspx?Language=E&xml=True"
-	initDbmap sync.Once
 	goEnv     string
-	_dbmap    *gorp.DbMap
+	dbmap     *gorp.DbMap
 )
 
 type Votes struct {
@@ -67,7 +65,7 @@ func getRequest(client *http.Client, url string) (body []byte, err error) {
 
 func latestVoteNumbers() (voteNumber, parliamentNumber int64, err error) {
 	query := "SELECT * FROM vote ORDER BY parliament DESC, number DESC LIMIT 1"
-	rows, err := dbmap().Select(Vote{}, query)
+	rows, err := dbmap.Select(Vote{}, query)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -119,7 +117,7 @@ func FetchLatestVotes() (latestVotes VoteSlice, err error) {
 
 func LatestTenVotes() (latestVotes VoteSlice, err error) {
 	query := "SELECT * FROM vote ORDER BY id DESC LIMIT 10"
-	rows, err := dbmap().Select(Vote{}, query)
+	rows, err := dbmap.Select(Vote{}, query)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +128,7 @@ func LatestTenVotes() (latestVotes VoteSlice, err error) {
 }
 
 func InsertVotes(votes VoteSlice) (err error) {
-	transaction, err := dbmap().Begin()
+	transaction, err := dbmap.Begin()
 	if err != nil {
 		return err
 	}
@@ -162,26 +160,23 @@ func (vote *Vote) Link() (url string) {
 	return
 }
 
-func dbmap() *gorp.DbMap {
-	initDbmap.Do(func() {
-		goEnv = env.String("GO_ENV")
+func init() {
+	goEnv = env.String("GO_ENV")
 
-		host := env.String(goEnv + "_POSTGRES_HOST")
-		database := env.String(goEnv + "_POSTGRES_DB")
-		user := env.String(goEnv + "_POSTGRES_USER")
-		port := env.String(goEnv + "_POSTGRES_PORT")
-		password := env.String(goEnv + "_POSTGRES_PASSWORD")
-		ssl := env.String(goEnv + "_POSTGRES_SSL")
-		connectionInfo := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s sslmode=%s", database, user, password, host, port, ssl)
-		db, err := sql.Open("postgres", connectionInfo)
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
-		_dbmap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
-		table := _dbmap.AddTable(Vote{}).SetKeys(true, "Id")
-		table.ColMap("DescriptionEnglish").SetMaxSize(2048)
-		table.ColMap("DescriptionFrench").SetMaxSize(2048)
-		_dbmap.CreateTables()
-	})
-	return _dbmap
+	host := env.String(goEnv + "_POSTGRES_HOST")
+	database := env.String(goEnv + "_POSTGRES_DB")
+	user := env.String(goEnv + "_POSTGRES_USER")
+	port := env.String(goEnv + "_POSTGRES_PORT")
+	password := env.String(goEnv + "_POSTGRES_PASSWORD")
+	ssl := env.String(goEnv + "_POSTGRES_SSL")
+	connectionInfo := fmt.Sprintf("dbname=%s user=%s password=%s host=%s port=%s sslmode=%s", database, user, password, host, port, ssl)
+	db, err := sql.Open("postgres", connectionInfo)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	dbmap = &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
+	table := dbmap.AddTable(Vote{}).SetKeys(true, "Id")
+	table.ColMap("DescriptionEnglish").SetMaxSize(2048)
+	table.ColMap("DescriptionFrench").SetMaxSize(2048)
+	dbmap.CreateTables()
 }

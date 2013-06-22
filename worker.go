@@ -7,6 +7,7 @@ import (
 	"github.com/baliw/moverss"
 	"github.com/darkhelmet/env"
 	"github.com/interstateone/bufferapi"
+	"github.com/interstateone/todays-vote/votes"
 	"github.com/interstateone/translate"
 	"html/template"
 	"io/ioutil"
@@ -14,7 +15,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"votes"
 )
 
 var (
